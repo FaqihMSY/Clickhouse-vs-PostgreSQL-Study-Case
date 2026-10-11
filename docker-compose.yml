@@ -1,0 +1,60 @@
+name: transit-tap
+
+x-limits: &limits
+  cpus: 4
+  mem_limit: 4g
+
+services:
+  postgres:
+    image: postgres:16
+    <<: *limits
+    shm_size: 1gb
+    environment:
+      POSTGRES_USER: bench
+      POSTGRES_PASSWORD: bench
+      POSTGRES_DB: transit
+    command: >
+      postgres
+      -c shared_buffers=1GB
+      -c effective_cache_size=3GB
+      -c work_mem=128MB
+      -c maintenance_work_mem=512MB
+      -c max_parallel_workers_per_gather=4
+      -c parallel_setup_cost=0
+      -c parallel_tuple_cost=0
+      -c jit=off
+    ports: ["55432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./data:/data:ro
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.8
+    <<: *limits
+    environment:
+      CLICKHOUSE_DB: transit
+      CLICKHOUSE_USER: bench
+      CLICKHOUSE_PASSWORD: bench
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    ulimits:
+      nofile: { soft: 262144, hard: 262144 }
+    ports: ["58123:8123"]
+    volumes:
+      - chdata:/var/lib/clickhouse
+      - ./data:/data:ro
+
+  py:
+    image: python:3.12-slim
+    profiles: ["tools"]
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      DB_HOST: host.docker.internal
+      PYTHONPATH: /app/scripts
+      PYTHONUNBUFFERED: "1"
+    entrypoint: ["sh", "-c", "pip install -q --disable-pip-version-check -r requirements.txt && exec python \"$$@\"", "--"]
+
+volumes:
+  pgdata:
+  chdata:

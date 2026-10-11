@@ -1,0 +1,14 @@
+{
+  "name": "transit-tap-columnar",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "",
+  "dependencies": {
+    "@clickhouse/client": "^1.11.0",
+    "pg": "^8.13.0"
+  },
+  "devDependencies": {
+    "markdown-it": "^15.0.2"
+  }
+}
